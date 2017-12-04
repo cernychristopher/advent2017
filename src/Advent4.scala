@@ -5,15 +5,15 @@ object Advent4 {
     line.split(' ').toList
   }.toList
 
-  def isPassphraseValid(passphrase:List[String]): Boolean = passphrase.tails.forall {
-    case s :: ss => !ss.contains(s)
-    case Nil => true
-  }
+  def isPassphraseValid(passphrase:List[String]): Boolean = checkValidity(passphrase, (s, ss) => !ss.contains(s))
 
-  def isPassphraseValid2(passphrase:List[String]): Boolean = passphrase.tails.forall {
-    case s :: ss =>
-      val sorted = s.sorted
-      !ss.exists(_.sorted == sorted)
+  def isPassphraseValid2(passphrase:List[String]): Boolean = checkValidity(passphrase, (s, ss) => {
+    val sorted = s.sorted
+    !ss.exists(_.sorted == sorted)
+  })
+
+  def checkValidity(passphrase:List[String], checker: (String, List[String]) => Boolean): Boolean = passphrase.tails.forall {
+    case s :: ss => checker(s, ss)
     case Nil => true
   }
 
