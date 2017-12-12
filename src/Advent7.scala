@@ -1633,13 +1633,39 @@ object Advent7 {
     entries.toMap
   }
 
+  def findWrongChild(circuit:Circuit, circuits: Map[String, Circuit]):ChildWeight = {
+    def mergeChildWeight(circuit: Circuit, childWeights: List[ChildWeight]): ChildWeight = childWeights match {
+      case Nil => ChildWeight(circuit, circuit.weight, None) // should never happen!
+      case reference :: rest =>
+        childWeights.find(_.correction.isDefined).getOrElse { // let incorrect weights bubble up
+          val weightSum = circuit.weight + childWeights.map(_.weights).sum
+          rest.find(_.weights != reference.weights) match {
+            case None => ChildWeight(circuit, weightSum, None) // all weights are the same -> awesome!
+            case Some(wrongCandidate) if rest.forall(_.weights == wrongCandidate.weights) =>
+              ChildWeight(reference.circuit, weightSum, Some(wrongCandidate.weights - reference.weights)) // reference is wrong!
+            case Some(wrongEntry) =>
+              ChildWeight(wrongEntry.circuit, weightSum, Some(reference.weights - wrongEntry.weights)) // wrongentry is wrong!
+          }
+        }
+    }
+
+    def findChild(circuit: Circuit): ChildWeight = {
+      if (circuit.children.isEmpty) ChildWeight(circuit, circuit.weight, None)
+      else mergeChildWeight(circuit, circuit.children.flatMap(circuits.get).map(findChild))
+    }
+
+    findChild(circuit)
+  }
+
   case class Circuit(parent:Option[String], name: String, weight: Int, children: List[String])
+  case class ChildWeight(circuit: Circuit, weights:Int, correction: Option[Int])
 
   def main(args:Array[String]):Unit = {
     val circuits = readCircuits(TestInput)
-    val solution1 = circuits.values.find(_.parent.isEmpty).get.name
-
-    val solution2 = ""
+    val root = circuits.values.find(_.parent.isEmpty).get
+    val solution1 = root.name
+    val wrongChild = findWrongChild(root, circuits)
+    val solution2 = wrongChild.circuit.weight + wrongChild.correction.get
 
     println(s"Solution1: $solution1")
     println(s"Solution2: $solution2")
